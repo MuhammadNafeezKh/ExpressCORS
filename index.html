@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data PKL</title>
+
+    <style>
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+
+        body{
+            background: linear-gradient(135deg, #f5f7fb 0%, #e4e8f0 100%);
+            padding:40px 20px;
+            min-height: 100vh;
+        }
+
+        .container{
+            max-width:1000px;
+            margin:auto;
+        }
+
+        .title{
+            margin-bottom:30px;
+            animation: fadeInDown 0.5s ease;
+        }
+
+        .title h1{
+            font-size:32px;
+            margin-bottom:8px;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        .title p{
+            color: #7f8c8d;
+            font-size: 15px;
+        }
+
+        .card{
+            background:white;
+            border-radius:15px;
+            padding:25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            animation: fadeInUp 0.5s ease 0.1s both;
+            transition: transform 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        table{
+            width:100%;
+            border-collapse:collapse;
+        }
+
+        th{
+            text-align:left;
+            padding:18px 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 500;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: sticky;
+            top: 0;
+        }
+
+        td{
+            padding:18px 15px;
+            border-top:1px solid #eee;
+            color: #34495e;
+            font-size: 15px;
+        }
+
+        tbody tr{
+            transition: all 0.2s ease;
+        }
+
+        tr:hover{
+            background: linear-gradient(135deg, #f5f7ff 0%, #e8eeff 100%);
+            transform: scale(1.005);
+        }
+
+        .badge{
+            display:inline-block;
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color:white;
+            padding:6px 16px;
+            border-radius:20px;
+            font-size:13px;
+            font-weight: 500;
+            box-shadow: 0 2px 10px rgba(46, 204, 113, 0.3);
+            animation: pulse 2s infinite;
+        }
+
+        .badge.inaktif {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            box-shadow: 0 2px 10px rgba(231, 76, 60, 0.3);
+            animation: none;
+        }
+
+        .badge.selesai {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            box-shadow: 0 2px 10px rgba(52, 152, 219, 0.3);
+            animation: none;
+        }
+
+        /* Loading & Error States */
+        .loading {
+            text-align: center;
+            padding: 30px;
+            color: #7f8c8d;
+        }
+
+        .error {
+            text-align: center;
+            padding: 30px;
+            color: #e74c3c;
+            background: #fdedec;
+            border-radius: 10px;
+            margin: 10px 0;
+        }
+
+        /* Animations */
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 2px 10px rgba(46, 204, 113, 0.3); }
+            50% { box-shadow: 0 4px 20px rgba(46, 204, 113, 0.5); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            body { padding: 20px 10px; }
+            .card { padding: 15px; border-radius: 12px; }
+            th, td { padding: 12px 10px; font-size: 14px; }
+            .title h1 { font-size: 26px; }
+            table { display: block; overflow-x: auto; }
+        }
+
+        /* Accessibility */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* Focus states for keyboard navigation */
+        tr:focus-within {
+            outline: 2px solid #667eea;
+            outline-offset: -2px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="title">
+        <h1>Data Siswa PKL</h1>
+        <p>Monitoring siswa praktik kerja lapangan</p>
+    </div>
+
+    <div class="card">
+        <table role="table" aria-label="Tabel data siswa PKL">
+            <thead>
+                <tr>
+                    <th scope="col">Nama</th>
+                    <th scope="col">Perusahaan</th>
+                    <th scope="col">Pembimbing</th>
+                    <th scope="col">Status</th>
+                </tr>
+            </thead>
+            <tbody id="hasil">
+                <tr><td colspan="4" class="loading">Memuat data...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<script>
+    // Konfigurasi API - mudah diganti untuk production
+    const API_URL = 'http://localhost:3000/siswa';
+    // const API_URL = 'https://api.sekolah.sch.id/siswa'; // contoh production
+
+    // Fungsi format status dengan warna dinamis
+    function getStatusBadge(status) {
+        const statuses = {
+            'aktif': { text: 'Aktif', class: '' },
+            'inaktif': { text: 'Tidak Aktif', class: 'inaktif' },
+            'selesai': { text: 'Selesai', class: 'selesai' }
+        };
+        const s = statuses[status?.toLowerCase()] || statuses['aktif'];
+        return `<span class="badge ${s.class}">${s.text}</span>`;
+    }
+
+    // Fungsi render data dengan error handling
+    async function loadData() {
+        const tbody = document.getElementById('hasil');
+        
+        try {
+            const response = await fetch(API_URL, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+                // timeout: 10000 // opsional
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            
+            if (!Array.isArray(data) || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:#7f8c8d">Tidak ada data</td></tr>';
+                return;
+            }
+
+            let html = '';
+            data.forEach((item, index) => {
+                // Animasi staggered untuk setiap row
+                const delay = index * 0.05;
+                html += `
+                    <tr style="animation: fadeInUp 0.4s ease ${delay}s both">
+                        <td><strong>${escapeHtml(item.nama || '-')}</strong></td>
+                        <td>${escapeHtml(item.nama_perusahaan || '-')}</td>
+                        <td>${escapeHtml(item.nama_pembimbing || '-')}</td>
+                        <td>${getStatusBadge(item.status || 'aktif')}</td>
+                    </tr>
+                `;
+            });
+            
+            tbody.innerHTML = html;
+            
+        } catch (error) {
+            console.error('Error loading data:', error);
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="4" class="error">
+                        ⚠️ Gagal memuat data: ${error.message}<br>
+                        <small style="color:#7f8c8d">Pastikan server API berjalan di ${API_URL}</small>
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    // Utility: Mencegah XSS
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Auto-refresh setiap 30 detik (opsional)
+    // setInterval(loadData, 30000);
+
+    // Load data saat halaman siap
+    document.addEventListener('DOMContentLoaded', loadData);
+</script>
+
+</body>
+</html>     
